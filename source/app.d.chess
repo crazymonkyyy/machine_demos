@@ -1,0 +1,140 @@
+import raylib;
+import colorswap;
+import basic;
+import metric;
+import reusedmachines;
+
+enum windowx=800;
+enum windowy=600;
+
+void main(){
+	InitWindow(windowx, windowy, "Hello, Raylib-D!");
+	SetWindowPosition(2000,0);
+	SetTargetFPS(60);
+	mixin makecolors!();
+	loaddefualtcolors;
+	struct pos{
+		int x;
+		int y;
+		enum bullshit=pos(-1,-1);
+		import metric;
+		int distence(pos b){
+			return x.distence(b.x)+y.distence(b.y);
+		}
+		pos lerp(pos b,float f){
+			return pos(x.lerp(b.x,f),y.lerp(b.y,f));}
+	}
+	struct chess{
+		int x=1;
+		int y=1;
+		bool selected=true;
+		void give(pos a){
+			if(a.x==x&&a.y==y){selected=true;return;}
+			auto x_=x.distence(a.x);
+			auto y_=y.distence(a.y);
+			auto dis=[x_,y_][].sort.array;
+			if(selected && dis[0]==1 && dis[1]==2){
+				x=a.x;
+				y=a.y;
+				return;
+			}
+			selected =false;
+		}
+		void poke(){}
+		mixin machineopoverloads!();
+	}
+	Texture2D knight=LoadTexture("knight.png".toStringz);
+	auto calcwindow(){
+		struct window{
+			int x=0;
+			int y=0;
+			int w;
+			int h;
+		}
+		window o;
+		int w=GetScreenWidth;
+		int h=GetScreenHeight;
+		int s=min(w,h);
+		s=(s/8)*8;
+		o.x=(w-s)/2;
+		o.y=(h-s)/2;
+		s=s/8;
+		o.h=s;
+		o.w=s;
+		return o;
+	}
+	void drawboard(){
+		auto w=calcwindow;
+		bool b;
+		auto b_(){
+			return b ? brightbackground : cyan;}
+		foreach(i;0..8){
+		foreach(j;0..8){
+			DrawRectangle(i*w.w+w.x,j*w.h+w.y,w.w,w.h,b_);
+			b=!b;
+			}
+			b=!b;
+		}
+	}
+	struct renderer{
+		slowlerp!(pos,15) me; alias me this;
+		bool selected;
+		void opOpAssign(string s:"+",T)(T a){
+			auto w=calcwindow;
+			me++;
+			me+=pos(a.x,a.y);
+			//me.writeln;
+			selected=a.selected;
+			drawboard();
+			
+			int i=max( (w.h/9)*9, (w.h/6)*6);//pixel art has a size of 18 and im assume thing math is decent at cleanly magifing
+			float f=i/18;
+			auto k=pos(w.h*me.x+w.x,w.w*me.y+w.y);
+			if(selected){
+				DrawRectangle(k.x,k.y,w.w,w.h,good);
+			}
+			DrawTextureEx(knight,Vector2(k.x,k.y),0,f,brightwhite);
+		}
+	}
+	import undomachine;
+	alias O=nullable!pos;
+	O input(){
+		if(! IsMouseButtonPressed(0)){return O();}
+		auto w=calcwindow;
+		int x=GetMouseX;
+		int y=GetMouseY;
+		x-=w.x;
+		y-=w.y;
+		x/=w.w;
+		y/=w.h;
+		return O(pos(x,y));
+	}
+	//struct undo(M,R,alias input,int maxundos){
+	//chess chess_;
+	undo!(chess,renderer,input,10) chess_;
+	while (!WindowShouldClose()){
+		BeginDrawing();
+			ClearBackground(background);
+			DrawText("Hello, World!", 10,10, 20, text);
+			DrawRectangle(0,30,200,30,text);
+			static foreach(i,mix;colornames){ {
+				int j=(i+1)*30;
+				color c=mixin(mix);
+				DrawRectangle(0,j,25,25,c);
+				DrawText(mix,30,j,20,c);
+			} }
+			if(IsKeyPressed(KeyboardKey.KEY_F11)){
+				changecolors;
+			}
+			if(IsKeyPressed(KeyboardKey.KEY_F10)){ chess_.writeln;}
+			if(IsKeyPressed(KeyboardKey.KEY_Z)){chess_.pull;}
+			//render(chess_);
+			//if(IsMouseButtonPressed(0)){chess_+=input;}
+			chess_++;
+			//DrawTexture(knight,100,100,brightwhite);
+			//DrawTextureEx(knight,Vector2(100,100),0,4,brightwhite);
+			//DrawFPS(10,10);
+		EndDrawing();
+	}
+	CloseWindow();
+}

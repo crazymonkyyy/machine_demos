@@ -1,0 +1,104 @@
+import raylib;
+import colorswap;
+import reusedmachines;
+import basic;
+enum windowx=800;
+enum windowy=600;
+
+void main(){
+	InitWindow(windowx, windowy, "Hello, Raylib-D!");
+	SetWindowPosition(2000,0);
+	SetTargetFPS(60);
+	mixin makecolors!();
+	loaddefualtcolors;
+	auto color_=[red,yellow,green];
+	enum Vector2[] postions=[Vector2(0,0),Vector2(0,40),Vector2(0,80)];
+	enum timings=[5,1,7];
+	struct tafficlight{
+		struct pair{color _1; Vector2 _2;}
+		struct zip{//writing the real one would take like a day I think, brain hurts
+			cycleoutsidearray!color_ m;
+			cyclearray!postions n;
+			auto get(){
+				return pair(m,n.get);
+			}
+			void poke(){
+				m++;
+				n++;
+			}
+			mixin machineopoverloads!();
+		}
+		struct changespeedcycle(M,alias time){
+			M mach; alias mach this;
+			cyclearray!time times;
+			counter!(time[0]) count;
+			int slow=100;
+			void poke(){
+				if( ! count.ishalt){count++; return;}
+				mach++;
+				times++;
+				count=typeof(count).init;
+				count.max=times*slow;
+			}
+			mixin compositionopoverloads!();
+		}
+		changespeedcycle!(zip,timings) mach; alias mach this;
+		alias zipout=zip;
+		//enum pair[3] alllights=(){
+		//	pair[3] o;
+		//	zip z;//a fucking frame error *here*, its litterally just up there
+		//	foreach(i;0..3){
+		//		o[i]=z; z++;}
+		//	return o;
+		//}();
+		pair[3] generatelights(){
+			pair[3] o;
+			zip z;
+			foreach(i;0..3){
+				o[i]=z; z++;}
+			return o;
+		}
+	}
+	tafficlight[9] lights;
+	{
+	int i;
+	foreach(slow;[10,30,100]){
+	foreach(offset;[0,10,100]){
+		lights[i].slow=slow;
+		foreach(j;0..offset){lights[i]++;}
+		i++;
+	}}
+	}
+	while (!WindowShouldClose()){
+		BeginDrawing();
+			ClearBackground(background);
+			DrawText("Hello, World!", 10,10, 20, text);
+			DrawRectangle(0,30,200,30,text);
+			static foreach(i,mix;colornames){ {
+				int j=(i+1)*30;
+				color c=mixin(mix);
+				DrawRectangle(0,j,25,25,c);
+				DrawText(mix,30,j,20,c);
+			} }
+			if(IsKeyPressed(KeyboardKey.KEY_F11)){
+				changecolors;
+				color_=[red,yellow,green];
+			}
+			void draw(T)(T a,Vector2 offset){
+				foreach(e;a.generatelights[]){
+					DrawCircleV(e._2+offset,20,e._1.lerp(background,.5));}
+				DrawCircleV(a._2+offset,20,a._1);
+			}
+			int i=0;
+			foreach(x;[100,300,500]){
+			foreach(y;[100,300,500]){
+				auto offset=Vector2(x,y);
+				draw(lights[i],offset);
+				lights[i]++;
+				i++;
+			}}
+			//DrawFPS(10,10);
+		EndDrawing();
+	}
+	CloseWindow();
+}

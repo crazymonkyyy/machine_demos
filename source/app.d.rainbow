@@ -1,0 +1,52 @@
+import raylib;
+import colorswap;
+import rainbowmachiens;
+import reusedmachines;
+import basic;
+enum windowx=800;
+enum windowy=600;
+
+void main(){
+	InitWindow(windowx, windowy, "Hello, Raylib-D!");
+	SetWindowPosition(2000,0);
+	SetTargetFPS(60);
+	mixin makecolors!();
+	loaddefualtcolors;
+	auto colors_=[red,good,yellow,green,cyan,blue,purple,evil];
+	hindsight!(path!(cycleoutsidearray!(colors_),10),16) rainbow;
+	alias O=statefulout!(Vector2,Vector2);
+	smooth!(hindsight!(path!(parroit!(Vector2),10),10)) path;
+	O isfarenough(Vector2 input,Vector2 was){
+		//was.writeln;
+		if( (was-input).length<100){return O.invalidandskip;}
+		path+=input;//errrrr this should be elsewhere
+		skip:return O(input,input);
+	}
+	stateful!(vomiter!GetMousePosition,isfarenough,true) mouse;
+	while (!WindowShouldClose()){
+		BeginDrawing();
+			ClearBackground(background);
+			DrawText("Hello, World!", 10,10, 20, text);
+			DrawRectangle(0,30,200,30,text);
+			static foreach(i,mix;colornames){ {
+				int j=(i+1)*30;
+				color c=mixin(mix);
+				DrawRectangle(0,j,25,25,c);
+				DrawText(mix,30,j,20,c);
+			} }
+			DrawCircleV(path[-0..-5 ],30,rainbow[0]);
+			DrawCircleV(path[-3..-8 ],15,rainbow[-5]);
+			DrawCircleV(path[-6..-11],10,rainbow[-10]);
+			DrawCircleV(path[-9..-14], 3,rainbow[-15]);
+			rainbow++; path++; mouse++;
+			
+			//mouse.writeln;
+			if(IsKeyPressed(KeyboardKey.KEY_F11)){
+				changecolors;
+				colors_=[red,good,yellow,green,cyan,blue,purple,evil];//the compiler doesnt like passing slices as arrays compile time for the code I wrote, so this is a hack to keep the code I wrote happy
+			}
+			//DrawFPS(10,10);
+		EndDrawing();
+	}
+	CloseWindow();
+}

@@ -1,0 +1,80 @@
+import raylib;
+import colorswap;
+import basic;
+import metric;
+import reusedmachines;
+import spacemachines;
+
+enum windowx=800;
+enum windowy=600;
+
+void main(){
+	InitWindow(windowx, windowy, "Hello, Raylib-D!");
+	SetWindowPosition(2000,0);
+	SetTargetFPS(60);
+	mixin makecolors!();
+	loaddefualtcolors;
+	
+	Texture2D ship1=LoadTexture("ship1.png".toStringz);
+	Texture2D ship2=LoadTexture("ship2.png".toStringz);
+	enum shipoffset=Vector2(23,21);
+	auto randomvec(){
+		return Vector2(uniform(0,windowx),uniform(0,windowy));}
+	smooth!(preplan!(path!(vomiter!randomvec,10))) ship1path;
+	smooth!(preplan!(path!(vomiter!randomvec,10))) ship2path;
+	enum bulletspeed=10;
+	struct bullet(alias target,alias source){
+		slowlerp!Vector2 where;
+		Vector2 get(){return where;}
+		void poke(){
+			if( ! where.isstable){where++; return;}
+			where.state.current=source;
+			where.count.i=0;
+			int time=3;
+			while(source.distence(target[time])/time>bulletspeed || time>60){
+				time++;}
+			where.state.future=target[time];
+			where.slow=time;
+		}
+		mixin machineopoverloads!();
+	}
+	bullet!(ship1path,ship2path) bullet1;
+	bullet!(ship2path,ship1path) bullet2;
+	
+	auto heading(T)(T range){
+		import std.math;
+		auto h=Vector2Angle(range[0],range[15]);
+		if(h.isNaN){return 0;}
+		return (h+270)%360;
+	}
+	void drawship(T)(Texture2D s,ref T path){
+		DrawTextureEx(s,path[0..10]-Vector2Rotate(shipoffset,heading(path)),heading(path),.5,brightwhite);
+		//DrawTextureEx(s,path,/*heading(path)*/0,.5,brightwhite);
+	}
+	while (!WindowShouldClose()){
+		BeginDrawing();
+			ClearBackground(background);
+			DrawText("Hello, World!", 10,10, 20, text);
+			DrawRectangle(0,30,200,30,text);
+			static foreach(i,mix;colornames){ {
+				int j=(i+1)*30;
+				color c=mixin(mix);
+				DrawRectangle(0,j,25,25,c);
+				DrawText(mix,30,j,20,c);
+			} }
+			drawship(ship1,ship1path);
+			drawship(ship2,ship2path);
+			DrawCircleV(bullet1,5,good);
+			DrawCircleV(bullet2,5,evil);
+			ship1path++;
+			ship2path++;
+			bullet1++;
+			bullet2++;
+			if(IsKeyPressed(KeyboardKey.KEY_F11)){
+				changecolors;
+			}
+			//DrawFPS(10,10);
+		EndDrawing();
+	}
+	CloseWindow();
+}
